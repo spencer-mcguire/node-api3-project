@@ -2,7 +2,7 @@
 
 function logger(req, res, next) {
   const { method, originalUrl } = req;
-  console.log(`${method} to ${originalUrl} `, Date());
+  console.log(`${method} to ${originalUrl} at`, Date());
   next();
 }
 

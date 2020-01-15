@@ -14,14 +14,21 @@ router.post("/:id/posts", (req, res) => {
 router.get("/", (req, res) => {
   userDb
     .get(req.query)
-    .then(users => res.status(200).json(users))
+    .then(users => {
+      userDb.length
+        ? res.status(404).json({ error_message: "Users not found.." })
+        : res.status(200).json(users);
+    })
     .catch(err => {
       console.log(err);
+      res
+        .status(500)
+        .json({ error_message: "Something happened when getting the users" });
     });
 });
 
-router.get("/:id", (req, res) => {
-  // do your magic!
+router.get("/:id", validateUserId, (req, res) => {
+  userDb.getById(req.params.id).then(user => res.status(200).json(user));
 });
 
 router.get("/:id/posts", (req, res) => {
@@ -39,7 +46,25 @@ router.put("/:id", (req, res) => {
 //custom middleware
 
 function validateUserId(req, res, next) {
-  // do your magic!
+  userDb
+    .getById(req.params.id)
+    .then(user => {
+      if (user) {
+        user = req.user;
+        next();
+      } else {
+        res.status(404).json({ message: "invalid user id" });
+      }
+      return req.user;
+    })
+    .catch(err => {
+      console.log(err);
+      res
+        .status(500)
+        .json({
+          error_message: "Something happened when validating the user id"
+        });
+    });
 }
 
 function validateUser(req, res, next) {
