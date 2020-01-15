@@ -1,5 +1,6 @@
 const express = require("express");
 const userDb = require("./userDb");
+const postDb = require("../posts/postDb");
 
 const router = express.Router();
 
@@ -16,7 +17,17 @@ router.post("/", validateUser("name"), (req, res) => {
 });
 
 router.post("/:id/posts", validateUserId, validatePost, (req, res) => {
-  // do your magic!
+  const newPost = { ...req.body, user_id: req.user.id };
+
+  postDb
+    .insert(newPost)
+    .then(post => res.status(201).json(post))
+    .catch(err => {
+      console.log(err);
+      res
+        .status(500)
+        .json({ error_message: "Something happened when submitting the post" });
+    });
 });
 
 router.get("/", (req, res) => {
