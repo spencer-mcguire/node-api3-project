@@ -3,8 +3,16 @@ const userDb = require("./userDb");
 
 const router = express.Router();
 
-router.post("/", (req, res) => {
-  // do your magic!
+router.post("/", validateUser("name"), (req, res) => {
+  userDb
+    .insert(req.body)
+    .then(newUser => res.status(201).json(newUser))
+    .catch(err => {
+      console.log(err);
+      res
+        .status(500)
+        .json({ error_message: "Something happened when creating the user" });
+    });
 });
 
 router.post("/:id/posts", (req, res) => {
@@ -28,7 +36,10 @@ router.get("/", (req, res) => {
 });
 
 router.get("/:id", validateUserId, (req, res) => {
-  userDb.getById(req.params.id).then(user => res.status(200).json(user));
+  userDb
+    .getById(req.user)
+    .then(user => res.status(200).json(user))
+    .catch(err => console.log(err));
 });
 
 router.get("/:id/posts", (req, res) => {
@@ -51,24 +62,38 @@ function validateUserId(req, res, next) {
     .then(user => {
       if (user) {
         user = req.user;
-        next();
+        next(req.user);
       } else {
-        res.status(404).json({ message: "invalid user id" });
+        res.status(400).json({ message: "invalid user id" });
       }
-      return req.user;
     })
     .catch(err => {
       console.log(err);
-      res
-        .status(500)
-        .json({
-          error_message: "Something happened when validating the user id"
-        });
+      res.status(500).json({
+        error_message: "Something happened when validating the user id"
+      });
     });
 }
 
-function validateUser(req, res, next) {
-  // do your magic!
+// function validateUser(req, res, next) {
+//   if (!req.body) {
+//     res.status(400).json({ message: "missing user data" });
+//   } else if (!req.body.name) {
+//     res.status(400).json({ message: "missing required name field" });
+//   } else {
+//     next();
+//   }
+// }
+function validateUser(prop) {
+  return function(req, res, next) {
+    if (!req.body) {
+      res.status(400).json({ message: "missing user data" });
+    } else if (!req.body[prop]) {
+      res.status(400).json({ message: `missing required ${prop} field` });
+    } else {
+      next();
+    }
+  };
 }
 
 function validatePost(req, res, next) {
