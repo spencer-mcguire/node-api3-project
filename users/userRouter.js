@@ -15,7 +15,7 @@ router.post("/", validateUser("name"), (req, res) => {
     });
 });
 
-router.post("/:id/posts", (req, res) => {
+router.post("/:id/posts", validateUserId, validatePost, (req, res) => {
   // do your magic!
 });
 
@@ -36,14 +36,29 @@ router.get("/", (req, res) => {
 });
 
 router.get("/:id", validateUserId, (req, res) => {
-  userDb
-    .getById(req.user)
-    .then(user => res.status(200).json(user))
-    .catch(err => console.log(err));
+  if (req.user) {
+    res.status(200).json(req.user);
+  } else {
+    res
+      .status(500)
+      .json({ error_message: "Something happened when getting the user" });
+  }
+  // userDb
+  //   .getById(req.user.id)
+  //   .then(user => res.status(200).json(user))
+  //   .catch(err => console.log(err));
 });
 
-router.get("/:id/posts", (req, res) => {
-  // do your magic!
+router.get("/:id/posts", validateUserId, (req, res) => {
+  userDb
+    .getUserPosts(req.user.id)
+    .then(posts => res.status(200).json(posts))
+    .catch(err => {
+      console.log(err);
+      res.status(500).json({
+        error_message: "Something happened when getting the users posts"
+      });
+    });
 });
 
 router.delete("/:id", (req, res) => {
@@ -61,8 +76,9 @@ function validateUserId(req, res, next) {
     .getById(req.params.id)
     .then(user => {
       if (user) {
-        user = req.user;
-        next(req.user);
+        req.user = user;
+        // console.log(req.user);
+        next();
       } else {
         res.status(400).json({ message: "invalid user id" });
       }
@@ -97,7 +113,13 @@ function validateUser(prop) {
 }
 
 function validatePost(req, res, next) {
-  // do your magic!
+  if (!req.body) {
+    res.status(400).json({ message: "missing post data" });
+  } else if (!req.body.text) {
+    res.status(400).json({ message: "missing required text field" });
+  } else {
+    next();
+  }
 }
 
 module.exports = router;
