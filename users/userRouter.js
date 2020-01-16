@@ -72,8 +72,23 @@ router.get("/:id/posts", validateUserId, (req, res) => {
     });
 });
 
-router.delete("/:id", (req, res) => {
-  // do your magic!
+router.delete("/:id", validateUserId, (req, res) => {
+  userDb
+    .remove(req.user.id)
+    .then(removed =>
+      res
+        .status(200)
+        .json({
+          records_deleted: removed,
+          message: `${req.user.name} was deleted.`
+        })
+    )
+    .catch(err => {
+      console.log(err);
+      res.status(500).json({
+        error_message: "user was not removed"
+      });
+    });
 });
 
 router.put("/:id", (req, res) => {
@@ -102,18 +117,9 @@ function validateUserId(req, res, next) {
     });
 }
 
-// function validateUser(req, res, next) {
-//   if (!req.body) {
-//     res.status(400).json({ message: "missing user data" });
-//   } else if (!req.body.name) {
-//     res.status(400).json({ message: "missing required name field" });
-//   } else {
-//     next();
-//   }
-// }
 function validateUser(prop) {
   return function(req, res, next) {
-    if (!req.body) {
+    if (Object.entries(req.body).length === 0) {
       res.status(400).json({ message: "missing user data" });
     } else if (!req.body[prop]) {
       res.status(400).json({ message: `missing required ${prop} field` });
