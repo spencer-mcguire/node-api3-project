@@ -76,12 +76,10 @@ router.delete("/:id", validateUserId, (req, res) => {
   userDb
     .remove(req.user.id)
     .then(removed =>
-      res
-        .status(200)
-        .json({
-          records_deleted: removed,
-          message: `${req.user.name} was deleted.`
-        })
+      res.status(200).json({
+        records_deleted: removed,
+        message: `${req.user.name} was deleted.`
+      })
     )
     .catch(err => {
       console.log(err);
@@ -91,8 +89,22 @@ router.delete("/:id", validateUserId, (req, res) => {
     });
 });
 
-router.put("/:id", (req, res) => {
-  // do your magic!
+router.put("/:id", validateUserId, validateUser("name"), (req, res) => {
+  userDb
+    .update(req.user.id, req.body)
+    .then(updated => {
+      userDb
+        .getById(req.user.id)
+        .then(user =>
+          res.status(200).json({ updated_records: updated, data: user })
+        );
+    })
+    .catch(err => {
+      console.log(err);
+      res.status(500).json({
+        error_message: "Something happened when updating the user."
+      });
+    });
 });
 
 //custom middleware
@@ -130,7 +142,7 @@ function validateUser(prop) {
 }
 
 function validatePost(req, res, next) {
-  if (!req.body) {
+  if (Object.entries(req.body).length === 0) {
     res.status(400).json({ message: "missing post data" });
   } else if (!req.body.text) {
     res.status(400).json({ message: "missing required text field" });
